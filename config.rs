@@ -1,13 +1,17 @@
 // config.rs
 
-use structopt::StructOpt;
+pub struct AppConfig {
+    pub bind_address: String,
+    pub upstream_addresses: Vec<String>,
+    // Add more configuration options as needed
+}
 
-#[derive(Debug, StructOpt)]
-#[structopt(name = "Load Balancer", about = "A simple load balancer in Rust")]
-pub struct CmdOptions {
-    #[structopt(short, long, default_value = "127.0.0.1:8080", help = "Bind address")]
-    pub bind: String,
-
-    #[structopt(short, long, help = "Upstream servers (comma-separated list)")]
-    pub upstream: Vec<String>,
+impl AppConfig {
+    pub fn new(bind_address: &str, upstream_addresses: Vec<&str>) -> AppConfig {
+        AppConfig {
+            bind_address: bind_address.to_string(),
+            upstream_addresses: upstream_addresses.iter().map(|&s| s.to_string()).collect(),
+            // Initialize other configuration options here
+        }
+    }
 }

@@ -1,36 +1,62 @@
-use std::net::TcpListener;
-use std::thread;
+use std::net::{TcpListener, TcpStream};
+use std::io::{Read, Write};
+use std::process;
 
-mod proxy;
 mod config;
+use config::AppConfig;
 
 fn main() {
-    // Gestion des arguments de la ligne de commande
-    let options = config::CmdOptions::parse();
-    
-    // Initialisation de l'état du proxy
-    let proxy_state = proxy::ProxyState::new(&options);
+    // Load configuration
+    let config = AppConfig::new("127.0.0.1:8080", vec!["127.0.0.1:8000", "127.0.0.1:8001"]);
 
-    // Démarrage du serveur TCP
-    let listener = match TcpListener::bind(&options.bind) {
+    // Your code will go here
+    println!("Hello, Load Balancer!");
+
+    // Example: create a TCP listener using the bind address from the configuration
+    let listener = match TcpListener::bind(&config.bind_address) {
         Ok(listener) => listener,
         Err(err) => {
-            eprintln!("Could not bind to {}: {}", options.bind, err);
-            std::process::exit(1);
+            eprintln!("Error binding to address: {}", err);
+            process::exit(1);
         }
     };
-    println!("Listening for requests on {}", options.bind);
-
-    // Acceptation des connexions entrantes
+    
+    // Example: handle incoming connections
     for stream in listener.incoming() {
-        let stream = stream.unwrap();
-
-        // Copie de l'état du proxy pour chaque thread
-        let state = proxy_state.clone();
-
-        // Gestion de la connexion dans un thread séparé
-        thread::spawn(|| {
-            proxy::handle_connection(stream, &state);
-        });
+        match stream {
+            Ok(stream) => {
+                // Handle the connection (you'll replace this with your logic)
+                handle_connection(stream);
+            }
+            Err(err) => {
+                eprintln!("Error accepting connection: {}", err);
+            }
+        }
     }
+}
+
+// Example: handle individual connections
+fn handle_connection(mut stream: TcpStream) {
+    let mut buffer = [0; 1024];
+    
+    // Read data from the client
+    match stream.read(&mut buffer) {
+        Ok(_) => {
+            // Process the request (you'll replace this with your logic)
+            let response = process_request(&buffer);
+            
+            // Send the response back to the client
+            match stream.write_all(response.as_bytes()) {
+                Ok(_) => (),
+                Err(err) => eprintln!("Error sending response: {}", err),
+            }
+        }
+        Err(err) => eprintln!("Error reading from client: {}", err),
+    }
+}
+
+// Example: process the client request
+fn process_request(request: &[u8]) -> String {
+    // Replace this with your request processing logic
+    String::from("HTTP/1.1 200 OK\r\n\r\nHello, client!")
 }
